@@ -151,6 +151,9 @@ def parse(html):
     res['up_transferred'], res['down_transferred'] = fetch_pair("Data Transferred", "MBytes")
     fetch_line_attenuation(res)
 
+    res['up_rate'] = int(res['up_rate'] * 1000)
+    res['down_rate'] = int(res['down_rate'] * 1000)
+
     return res
 
 def print_plain(stats):
