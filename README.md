@@ -1,7 +1,7 @@
-# TGiiNet-1 modem statistics
+# TG-1 and TG-789 modem statistics
 
 Fetches statistics from a tgiinet modem. These are made by Technicolor, 
-sold by Australian ISP iinet.
+sold by Australian ISP iinet. 
 
 I've tested with 15.4 firmware (15.53.7004-V1-7-1-CRF557) in bridge mode.
 Thanks to Shannon Wynter for his [nbntest](https://github.com/freman/nbntest/), some
@@ -26,8 +26,8 @@ down_rate 4.73
 up_rate 1.02
 down_power 12.4
 up_power 17.3
-down_attenuation 33.0
-up_attenuation 19.4
+down_attenuation0 33.0
+up_attenuation0 19.4
 down_noisemargin 10.9
 up_noisemargin 10.4
 ```
@@ -39,8 +39,8 @@ up_noisemargin 10.4
     "up_rate": 1.02,
     "down_power": 12.4,
     "up_power": 17.3,
-    "down_attenuation": 33.0,
-    "up_attenuation": 19.4
+    "down_attenuation0": 33.0,
+    "up_attenuation0": 19.4
     "down_noisemargin": 10.8,
     "up_noisemargin": 10.5,
 }

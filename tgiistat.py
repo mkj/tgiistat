@@ -113,19 +113,43 @@ class Fetcher(object):
         return r.text
 
 def parse(html):
+    """
+    Parses the contents of http://10.1.1.1/modals/broadband-bridge-modal.lp
+    to extract link values. 
+    """
     res = {}
     soup = BeautifulSoup(html, 'html.parser')
 
-    # use --parse to debug this with a file on disk
     def fetch_pair(title, unit):
+        # Find the label
+        lr = soup.find_all(string=title)
+        # Traverse up to the parent div that also includes the values.
+        # Search that div for text with the units (Mbps, dB etc)
+        updown = lr[0].parent.parent.find_all(string=re.compile(unit))
+        # Extract the float out of eg "4.85 Mbps"
+        return (float(t.replace(unit,'').strip()) for t in updown)
+
+    def fetch_line_attenuation(r):
+        """ Special case since VDSL has 3 values each for up/down 
+            eg "22.5, 64.9, 89.4 dB"
+            (measuring attenuation in 3 different frequency bands?)
+            we construct {up,down}_attenuation{1,2,3}
+        """
+        title = "Line Attenuation"
+        unit = "dB"
         lr = soup.find_all(string=title)
         updown = lr[0].parent.parent.find_all(string=re.compile(unit))
-        return (float(t.replace(unit,'').strip()) for t in updown)
+        for dirn, triple in zip(("up", "down"), updown):
+            vals = (v.strip() for v in triple.replace(unit, '').split(','))
+            for n, t in enumerate(vals, 1):
+                r['%s_attenuation%d' % (dirn, n)] = float(t)
+
 
     res['up_rate'], res['down_rate'] = fetch_pair("Line Rate", 'Mbps')
     res['up_power'], res['down_power'] = fetch_pair("Output Power", 'dBm')
-    res['up_attenuation'], res['down_attenuation'] = fetch_pair("Line Attenuation", 'dB')
     res['up_noisemargin'], res['down_noisemargin'] = fetch_pair("Noise Margin", 'dB')
+    res['up_transferred'], res['down_transferred'] = fetch_pair("Data Transferred", "MBytes")
+    fetch_line_attenuation(res)
 
     return res
 
@@ -137,13 +161,14 @@ def print_json(stats):
 
 def main():
     parser = argparse.ArgumentParser(description=
-"""Retrieves speed and other statistics from a Technicolor/iinet TGiiNet-1 modem.\n
+"""Retrieves speed and other statistics from a Technicolor/iinet TG-1 or TG-789 modem.\n
 Configure your details in tgiistat.toml\n 
 """
 )
     parser.add_argument('--config', '-c', type=str, default='tgiistat.toml', help='Default is tgiistat.toml')
     parser.add_argument('--debug', '-d', action="store_true")
     parser.add_argument('--json', action="store_true", help="JSON output")
+    # --parse is useful for debugging parse() from a saved broadband-bridge-modal.lp html file
     parser.add_argument('--parse', type=argparse.FileType('r'), help="Parse html from a file", metavar='saved.html')
 
     args = parser.parse_args()
