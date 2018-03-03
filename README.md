@@ -11,26 +11,26 @@ Edit `tgiistat.toml` to set your modem's IP and password.
 
 ```
 ./venv/bin/python tgiistat.py
-down_rate 1.02
-up_rate 4.73
-down_power 17.3
-up_power 12.4
-down_attenuation 19.4
-up_attenuation 33.0
-down_noisemargin 10.5
-up_noisemargin 10.9
+down_rate 4.73
+up_rate 1.02
+down_power 12.4
+up_power 17.3
+down_attenuation 33.0
+up_attenuation 19.4
+down_noisemargin 10.9
+up_noisemargin 10.4
 ```
 
 ```
 ./venv/bin/python tgiistat.py  --json
 {
-    "down_rate": 1.02,
-    "up_rate": 4.73,
-    "down_power": 17.3,
-    "up_power": 12.4,
-    "down_attenuation": 19.4,
-    "up_attenuation": 33.0,
-    "down_noisemargin": 10.5,
-    "up_noisemargin": 10.9
+    "down_rate": 4.73,
+    "up_rate": 1.02,
+    "down_power": 12.4,
+    "up_power": 17.3,
+    "down_attenuation": 33.0,
+    "up_attenuation": 19.4
+    "down_noisemargin": 10.8,
+    "up_noisemargin": 10.5,
 }
 ```

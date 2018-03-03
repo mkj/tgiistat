@@ -119,13 +119,13 @@ def parse(html):
     # use --parse to debug this with a file on disk
     def fetch_pair(title, unit):
         lr = soup.find_all(string=title)
-        downup = lr[0].parent.parent.find_all(string=re.compile(unit))
-        return (float(t.replace(unit,'').strip()) for t in downup)
+        updown = lr[0].parent.parent.find_all(string=re.compile(unit))
+        return (float(t.replace(unit,'').strip()) for t in updown)
 
-    res['down_rate'], res['up_rate'] = fetch_pair("Line Rate", 'Mbps')
-    res['down_power'], res['up_power'] = fetch_pair("Output Power", 'dBm')
-    res['down_attenuation'], res['up_attenuation'] = fetch_pair("Line Attenuation", 'dB')
-    res['down_noisemargin'], res['up_noisemargin'] = fetch_pair("Noise Margin", 'dB')
+    res['up_rate'], res['down_rate'] = fetch_pair("Line Rate", 'Mbps')
+    res['up_power'], res['down_power'] = fetch_pair("Output Power", 'dBm')
+    res['up_attenuation'], res['down_attenuation'] = fetch_pair("Line Attenuation", 'dB')
+    res['up_noisemargin'], res['down_noisemargin'] = fetch_pair("Noise Margin", 'dB')
 
     return res
 
