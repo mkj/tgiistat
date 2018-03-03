@@ -1,4 +1,4 @@
-= TGiiNet-1 modem statistics =
+# TGiiNet-1 modem statistics
 
 Fetches statistics from a tgiinet modem. These are made by Technicolor, 
 sold by Australian ISP iinet.
@@ -8,6 +8,17 @@ Thanks to Shannon Wynter for his [nbntest](https://github.com/freman/nbntest/), 
 details were found there.
 
 Edit `tgiistat.toml` to set your modem's IP and password.
+
+This requires python3.
+
+## Install
+```
+python -m venv init venv
+./venv/bin/pip install --upgrade pip
+./venv/bin/pip install -r requirements.txt
+```
+
+## Usage
 
 ```
 ./venv/bin/python tgiistat.py
