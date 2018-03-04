@@ -15,6 +15,7 @@ import logging
 import binascii
 import re
 import json
+import datetime
 
 import requests
 from bs4 import BeautifulSoup
@@ -116,9 +117,17 @@ def parse(html):
     """
     Parses the contents of http://10.1.1.1/modals/broadband-bridge-modal.lp
     to extract link values. 
+
+    The tg-1 doesn't have id attributes so we have to find text labels.
     """
     res = {}
     soup = BeautifulSoup(html, 'html.parser')
+
+    def fetch_string(title):
+        lr = soup.find_all(string=title)
+        D(title)
+        D(lr[0].parent.parent)
+        return lr[0].parent.parent.find_next('span').text
 
     def fetch_pair(title, unit):
         # Find the label
@@ -144,15 +153,27 @@ def parse(html):
             for n, t in enumerate(vals, 1):
                 r['%s_attenuation%d' % (dirn, n)] = float(t)
 
+    def fetch_uptime():
+        """ Returns uptime in seconds """
+        uptime = fetch_string('DSL Uptime')
+        mat = re.match(r'(?:(\d+)days)? *(?:(\d+)hours)? *(?:(\d+)min)? *(?:(\d+)sec)?', uptime)
+        d,h,m,s = (int(x) for x in mat.groups(0))
+        return int(datetime.timedelta(days=d, hours=h, minutes=m, seconds=s).total_seconds())
 
     res['up_rate'], res['down_rate'] = fetch_pair("Line Rate", 'Mbps')
+    res['up_maxrate'], res['down_maxrate'] = fetch_pair("Maximum Line rate", 'Mbps')
     res['up_power'], res['down_power'] = fetch_pair("Output Power", 'dBm')
     res['up_noisemargin'], res['down_noisemargin'] = fetch_pair("Noise Margin", 'dB')
     res['up_transferred'], res['down_transferred'] = fetch_pair("Data Transferred", "MBytes")
     fetch_line_attenuation(res)
+    res['dsl_uptime'] = fetch_uptime()
+    res['dsl_mode'] = fetch_string('DSL Mode')
+    res['dsl_type'] = fetch_string('DSL Type')
+    res['dsl_status'] = fetch_string('DSL Status')
 
-    res['up_rate'] = int(res['up_rate'] * 1000)
-    res['down_rate'] = int(res['down_rate'] * 1000)
+    # integer kbps are easier to work with in scripts
+    for n in 'down_rate', 'up_rate', 'down_maxrate', 'up_maxrate':
+        res[n] = int(res[n] * 1000)
 
     return res
 

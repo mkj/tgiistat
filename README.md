@@ -13,7 +13,7 @@ This requires python3.
 
 ## Install
 ```
-python -m venv init venv
+python3 -m venv init venv
 ./venv/bin/pip install --upgrade pip
 ./venv/bin/pip install -r requirements.txt
 ```
@@ -21,27 +21,44 @@ python -m venv init venv
 ## Usage
 
 ```
-./venv/bin/python tgiistat.py
-down_rate 4.73
-up_rate 1.02
+./venv/bin/python3 tgiistat.py
+up_rate 1010
+down_rate 4850
+up_maxrate 1020
+down_maxrate 5480
+up_power 17.1
 down_power 12.4
-up_power 17.3
-down_attenuation0 33.0
-up_attenuation0 19.4
-down_noisemargin 10.9
-up_noisemargin 10.4
+up_noisemargin 10.9
+down_noisemargin 11.3
+up_transferred 193.51
+down_transferred 650.39
+up_attenuation1 19.3
+down_attenuation1 36.0
+dsl_uptime 19565
+dsl_mode Interleaved
+dsl_type ADSL2+
+dsl_status Up
+
 ```
 
 ```
-./venv/bin/python tgiistat.py  --json
+./venv/bin/python3 tgiistat.py  --json
 {
-    "down_rate": 4.73,
-    "up_rate": 1.02,
+    "up_rate": 1010,
+    "down_rate": 4850,
+    "up_maxrate": 1020,
+    "down_maxrate": 5480,
+    "up_power": 17.1,
     "down_power": 12.4,
-    "up_power": 17.3,
-    "down_attenuation0": 33.0,
-    "up_attenuation0": 19.4
-    "down_noisemargin": 10.8,
-    "up_noisemargin": 10.5,
+    "up_noisemargin": 10.9,
+    "down_noisemargin": 11.3,
+    "up_transferred": 193.51,
+    "down_transferred": 650.39,
+    "up_attenuation1": 19.3,
+    "down_attenuation1": 36.0,
+    "dsl_uptime": 19565,
+    "dsl_mode": "Interleaved",
+    "dsl_type": "ADSL2+",
+    "dsl_status": "Up"
 }
 ```
