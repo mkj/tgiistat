@@ -60,7 +60,12 @@ class Fetcher(object):
         srp_user = srp.User(self.config['username'], self.config['password'],
             hash_alg=srp.SHA256, ng_type=srp.NG_2048)
         # Bit of a bodge. Seems the router uses a custom k value? Thanks to nbntest
-        srp._mod.BN_hex2bn(srp_user.k, b'05b9e8ef059c6b32ea59fc1d322d37f04aa30bae5aa9003b8321e21ddb04e300')
+        if hasattr(srp._mod, 'BN_hex2bn'):
+            # _mod == _ctsrp, openssl
+            srp._mod.BN_hex2bn(srp_user.k, b'05b9e8ef059c6b32ea59fc1d322d37f04aa30bae5aa9003b8321e21ddb04e300')
+        else:
+            # _mod == _pysrp, pure python
+            srp_user.k = int('05b9e8ef059c6b32ea59fc1d322d37f04aa30bae5aa9003b8321e21ddb04e300', 16)
 
         I, A = srp_user.start_authentication()
         A = binascii.hexlify(A)
