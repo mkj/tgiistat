@@ -154,7 +154,8 @@ def parse(html):
         lr = soup.find_all(string=title)
         updown = lr[0].parent.parent.find_all(string=re.compile(unit))
         for dirn, triple in zip(("up", "down"), updown):
-            vals = (v.strip() for v in triple.replace(unit, '').split(','))
+            # [:3] to get rid of N/A from the strange "2.8, 12.8, 18.9,N/A,N/A dB 7.8, 16.7, 24.3 dB"
+            vals = (v.strip() for v in triple.replace(unit, '').split(',')[:3])
             for n, t in enumerate(vals, 1):
                 r['%s_attenuation%d' % (dirn, n)] = float(t)
 
