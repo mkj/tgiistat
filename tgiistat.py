@@ -15,6 +15,7 @@ import logging
 import binascii
 import re
 import json
+import csv
 import datetime
 
 import requests
@@ -189,6 +190,9 @@ def print_plain(stats):
 def print_json(stats):
     print(json.dumps(stats, indent=4))
 
+def print_csv(stats):
+    csv.writer(sys.stdout).writerow(stats.values())
+
 def main():
     parser = argparse.ArgumentParser(description=
 """Retrieves speed and other statistics from a Technicolor/iinet TG-1 or TG-789 modem.\n
@@ -198,6 +202,7 @@ Configure your details in tgiistat.toml\n
     parser.add_argument('--config', '-c', type=str, default='tgiistat.toml', help='Default is tgiistat.toml')
     parser.add_argument('--debug', '-d', action="store_true")
     parser.add_argument('--json', action="store_true", help="JSON output")
+    parser.add_argument('--csv', action="store_true", help="CSV output")
     # --parse is useful for debugging parse() from a saved broadband-bridge-modal.lp html file
     parser.add_argument('--parse', type=argparse.FileType('r'), help="Parse html from a file", metavar='saved.html')
 
@@ -219,6 +224,8 @@ Configure your details in tgiistat.toml\n
 
     if args.json:
         print_json(stats)
+    elif args.csv:
+        print_csv(stats)
     else:
         print_plain(stats)
     
