@@ -17,6 +17,7 @@ import re
 import json
 import csv
 import datetime
+from collections import OrderedDict
 
 import requests
 from bs4 import BeautifulSoup
@@ -126,7 +127,7 @@ def parse(html):
 
     The tg-1 doesn't have id attributes so we have to find text labels.
     """
-    res = {}
+    res = OrderedDict()
     soup = BeautifulSoup(html, 'html.parser')
 
     def fetch_string(title):
