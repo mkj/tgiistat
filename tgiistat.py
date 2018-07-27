@@ -206,6 +206,7 @@ Configure your details in tgiistat.toml\n
     parser.add_argument('--csv', action="store_true", help="CSV output")
     # --parse is useful for debugging parse() from a saved broadband-bridge-modal.lp html file
     parser.add_argument('--parse', type=argparse.FileType('r'), help="Parse html from a file", metavar='saved.html')
+    parser.add_argument('--date', action="store_true", help="Add a date-time field to output")
 
     args = parser.parse_args()
 
@@ -222,6 +223,9 @@ Configure your details in tgiistat.toml\n
         D(stats_page)
 
     stats = parse(stats_page)
+    if args.date:
+        stats['datetime'] = datetime.datetime.now()
+        stats.move_to_end('datetime', last=False)
 
     if args.json:
         print_json(stats)
