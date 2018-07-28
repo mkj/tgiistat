@@ -17,6 +17,7 @@ import re
 import json
 import csv
 import datetime
+import time
 from collections import OrderedDict
 
 import requests
@@ -208,6 +209,7 @@ Configure your details in tgiistat.toml\n
     parser.add_argument('--json', action="store_true", help="JSON output")
     parser.add_argument('--csv', action="store_true", help="CSV output")
     parser.add_argument('--csv-headers', action="store_true", help="CSV-style headers")
+    parser.add_argument('--poll', '-p', type=int, default=0, help='interval (in seconds) between polls')
     # --parse is useful for debugging parse() from a saved broadband-bridge-modal.lp html file
     parser.add_argument('--parse', type=argparse.FileType('r'), help="Parse html from a file", metavar='saved.html')
 
@@ -218,24 +220,33 @@ Configure your details in tgiistat.toml\n
         config_text = c.read()
     config = toml.loads(config_text)
 
-    if args.parse:
-        stats_page = args.parse.read()
-    else:
-        f = Fetcher(config)
-        stats_page = f.fetch()
-        D(stats_page)
+    while True:
+        try:
+            if args.parse:
+                stats_page = args.parse.read()
+            else:
+                f = Fetcher(config)
+                stats_page = f.fetch()
+                D(stats_page)
 
-    stats = parse(stats_page)
+            stats = parse(stats_page)
 
-    if args.json:
-        print_json(stats)
-    elif args.csv:
-        if args.csv_headers:
-            print_csv_headers(stats)
-        print_csv(stats)
-    else:
-        print_plain(stats)
-    
+            if args.json:
+                print_json(stats)
+            elif args.csv:
+                if args.csv_headers:
+                    print_csv_headers(stats)
+                print_csv(stats)
+            else:
+                print_plain(stats)
+        except Exception as e:
+            E(e)
+
+        if args.poll:
+            time.sleep(args.poll)
+        else:
+            break
+
 
 if __name__ == '__main__':
     main()
