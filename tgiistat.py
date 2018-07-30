@@ -240,7 +240,10 @@ Configure your details in tgiistat.toml\n
             else:
                 print_plain(stats)
         except Exception as e:
-            E(e)
+            if args.poll:
+                E(e)
+            else:
+                raise
 
         if args.poll:
             time.sleep(args.poll)
