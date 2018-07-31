@@ -198,6 +198,23 @@ def print_csv(stats):
 def print_csv_headers(stats):
     csv.writer(sys.stdout).writerow(stats.keys())
 
+def fetch_and_output(config, parse = None, json = False, csv = False, csv_headers = False):
+    if parse:
+        stats_page = parse.read()
+    else:
+        f = Fetcher(config)
+        stats_page = f.fetch()
+        D(stats_page)
+    stats = parse(stats_page)
+    if json:
+        print_json(stats)
+    elif csv:
+        if csv_headers:
+            print_csv_headers(stats)
+        print_csv(stats)
+    else:
+        print_plain(stats)
+
 def main():
     parser = argparse.ArgumentParser(description=
 """Retrieves speed and other statistics from a Technicolor/iinet TG-1 or TG-789 modem.\n
@@ -220,35 +237,17 @@ Configure your details in tgiistat.toml\n
         config_text = c.read()
     config = toml.loads(config_text)
 
-    while True:
-        try:
-            if args.parse:
-                stats_page = args.parse.read()
-            else:
-                f = Fetcher(config)
-                stats_page = f.fetch()
-                D(stats_page)
-
-            stats = parse(stats_page)
-
-            if args.json:
-                print_json(stats)
-            elif args.csv:
-                if args.csv_headers:
-                    print_csv_headers(stats)
-                print_csv(stats)
-            else:
-                print_plain(stats)
-        except Exception as e:
-            if args.poll:
+    if args.poll:
+        csv_headers = args.csv_headers
+        while True:
+            try:
+                fetch_and_output(config, args.parse, args.json, args.csv, csv_headers)
+                csv_headers = False # first time only
+                time.sleep(args.poll)
+            except Exception as e:
                 E(e)
-            else:
-                raise
-
-        if args.poll:
-            time.sleep(args.poll)
-        else:
-            break
+    else:
+        fetch_and_output(config, args.parse, args.json, args.csv, args.csv_headers)
 
 
 if __name__ == '__main__':
