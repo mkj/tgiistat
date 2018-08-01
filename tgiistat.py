@@ -244,9 +244,9 @@ Configure your details in tgiistat.toml\n
                 fetch_and_output(config, args.parse, args.json, args.csv, csv_headers)
                 sys.stdout.flush()
                 csv_headers = False # first time only
-                time.sleep(args.poll)
             except Exception as e:
                 E(e)
+            time.sleep(args.poll)
     else:
         fetch_and_output(config, args.parse, args.json, args.csv, args.csv_headers)
 
