@@ -198,9 +198,9 @@ def print_csv(stats):
 def print_csv_headers(stats):
     csv.writer(sys.stdout).writerow(stats.keys())
 
-def fetch_and_output(config, parse = None, json = False, csv = False, csv_headers = False):
-    if parse:
-        stats_page = parse.read()
+def fetch_and_output(config, from_file = None, json = False, csv = False, csv_headers = False):
+    if from_file:
+        stats_page = from_file.read()
     else:
         f = Fetcher(config)
         stats_page = f.fetch()
