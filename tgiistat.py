@@ -242,6 +242,7 @@ Configure your details in tgiistat.toml\n
         while True:
             try:
                 fetch_and_output(config, args.parse, args.json, args.csv, csv_headers)
+                sys.stdout.flush()
                 csv_headers = False # first time only
                 time.sleep(args.poll)
             except Exception as e:
