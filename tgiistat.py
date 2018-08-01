@@ -200,6 +200,7 @@ def print_csv_headers(stats):
 
 def fetch_and_output(config, from_file = None, json = False, csv = False, csv_headers = False):
     if from_file:
+        from_file.seek(0)
         stats_page = from_file.read()
     else:
         f = Fetcher(config)
