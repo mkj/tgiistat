@@ -168,6 +168,7 @@ def parse(html):
         d,h,m,s = (int(x) for x in mat.groups(0))
         return int(datetime.timedelta(days=d, hours=h, minutes=m, seconds=s).total_seconds())
 
+    res['datetime'] = datetime.datetime.now()
     res['up_rate'], res['down_rate'] = fetch_pair("Line Rate", 'Mbps')
     res['up_maxrate'], res['down_maxrate'] = fetch_pair("Maximum Line rate", 'Mbps')
     res['up_power'], res['down_power'] = fetch_pair("Output Power", 'dBm')
