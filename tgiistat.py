@@ -17,6 +17,7 @@ import re
 import json
 import csv
 import datetime
+import time
 from collections import OrderedDict
 
 import requests
@@ -198,6 +199,24 @@ def print_csv(stats):
 def print_csv_headers(stats):
     csv.writer(sys.stdout).writerow(stats.keys())
 
+def fetch_and_output(config, from_file = None, json = False, csv = False, csv_headers = False):
+    if from_file:
+        from_file.seek(0)
+        stats_page = from_file.read()
+    else:
+        f = Fetcher(config)
+        stats_page = f.fetch()
+        D(stats_page)
+    stats = parse(stats_page)
+    if json:
+        print_json(stats)
+    elif csv:
+        if csv_headers:
+            print_csv_headers(stats)
+        print_csv(stats)
+    else:
+        print_plain(stats)
+
 def main():
     parser = argparse.ArgumentParser(description=
 """Retrieves speed and other statistics from a Technicolor/iinet TG-1 or TG-789 modem.\n
@@ -209,6 +228,7 @@ Configure your details in tgiistat.toml\n
     parser.add_argument('--json', action="store_true", help="JSON output")
     parser.add_argument('--csv', action="store_true", help="CSV output")
     parser.add_argument('--csv-headers', action="store_true", help="CSV-style headers")
+    parser.add_argument('--poll', '-p', type=int, default=0, help='interval (in seconds) between polls')
     # --parse is useful for debugging parse() from a saved broadband-bridge-modal.lp html file
     parser.add_argument('--parse', type=argparse.FileType('r'), help="Parse html from a file", metavar='saved.html')
 
@@ -219,24 +239,19 @@ Configure your details in tgiistat.toml\n
         config_text = c.read()
     config = toml.loads(config_text)
 
-    if args.parse:
-        stats_page = args.parse.read()
+    if args.poll:
+        csv_headers = args.csv_headers
+        while True:
+            try:
+                fetch_and_output(config, args.parse, args.json, args.csv, csv_headers)
+                sys.stdout.flush()
+                csv_headers = False # first time only
+            except Exception as e:
+                E(e)
+            time.sleep(args.poll)
     else:
-        f = Fetcher(config)
-        stats_page = f.fetch()
-        D(stats_page)
+        fetch_and_output(config, args.parse, args.json, args.csv, args.csv_headers)
 
-    stats = parse(stats_page)
-
-    if args.json:
-        print_json(stats)
-    elif args.csv:
-        if args.csv_headers:
-            print_csv_headers(stats)
-        print_csv(stats)
-    else:
-        print_plain(stats)
-    
 
 if __name__ == '__main__':
     main()
