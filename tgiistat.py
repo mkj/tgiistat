@@ -113,79 +113,102 @@ class Fetcher(object):
 
         return session
 
-    def fetch(self):
+    def get(self):
         if not self.session:
             self.session = self.connect()
 
         modem_url = '%s/modals/broadband-bridge-modal.lp' % self.top_url
         r = self.session.get(modem_url)
-        return r.text
 
-def parse(html):
+        gateway_url = '%s/modals/gateway-modal.lp' % self.top_url
+        g = self.session.get(gateway_url)
+
+        return r.text, g.text
+
+# helpers to get things out of BeautifulSoup objects
+
+def fetch_string(soup, title):
+    lr = soup.find_all(string=title)
+    D(title)
+    D(lr[0].parent.parent)
+    return lr[0].parent.parent.find_next('span').text
+
+def fetch_pair(soup, title, unit):
+    # Find the label
+    lr = soup.find_all(string=title)
+    # Traverse up to the parent div that also includes the values.
+    # Search that div for text with the units (Mbps, dB etc)
+    updown = lr[0].parent.parent.find_all(string=re.compile(unit))
+    # Extract the float out of eg "4.85 Mbps"
+    return (float(t.replace(unit,'').strip()) for t in updown)
+
+def fetch_line_attenuation(soup, r):
+    """ Special case since VDSL has 3 values each for up/down 
+        eg "22.5, 64.9, 89.4 dB"
+        (measuring attenuation in 3 different frequency bands?)
+        we construct {up,down}_attenuation{1,2,3}
+    """
+    title = "Line Attenuation"
+    unit = "dB"
+    lr = soup.find_all(string=title)
+    updown = lr[0].parent.parent.find_all(string=re.compile(unit))
+    for dirn, triple in zip(("up", "down"), updown):
+        # [:3] to get rid of N/A from the strange "2.8, 12.8, 18.9,N/A,N/A dB 7.8, 16.7, 24.3 dB"
+        vals = (v.strip() for v in triple.replace(unit, '').split(',')[:3])
+        for n, t in enumerate(vals, 1):
+            r['%s_attenuation%d' % (dirn, n)] = float(t)
+
+def fetch_uptime(soup, name):
+    """ Returns uptime in seconds """
+    uptime = fetch_string(soup, name)
+    mat = re.match(r'(?:(\d+)days)? *(?:(\d+)hours)? *(?:(\d+)min)? *(?:(\d+)sec)?', uptime)
+    d,h,m,s = (int(x) for x in mat.groups(0))
+    return int(datetime.timedelta(days=d, hours=h, minutes=m, seconds=s).total_seconds())
+
+def parse_broadband(res, html):
     """
     Parses the contents of http://10.1.1.1/modals/broadband-bridge-modal.lp
     to extract link values. 
 
     The tg-1 doesn't have id attributes so we have to find text labels.
     """
-    res = OrderedDict()
     soup = BeautifulSoup(html, 'html.parser')
 
-    def fetch_string(title):
-        lr = soup.find_all(string=title)
-        D(title)
-        D(lr[0].parent.parent)
-        return lr[0].parent.parent.find_next('span').text
-
-    def fetch_pair(title, unit):
-        # Find the label
-        lr = soup.find_all(string=title)
-        # Traverse up to the parent div that also includes the values.
-        # Search that div for text with the units (Mbps, dB etc)
-        updown = lr[0].parent.parent.find_all(string=re.compile(unit))
-        # Extract the float out of eg "4.85 Mbps"
-        return (float(t.replace(unit,'').strip()) for t in updown)
-
-    def fetch_line_attenuation(r):
-        """ Special case since VDSL has 3 values each for up/down 
-            eg "22.5, 64.9, 89.4 dB"
-            (measuring attenuation in 3 different frequency bands?)
-            we construct {up,down}_attenuation{1,2,3}
-        """
-        title = "Line Attenuation"
-        unit = "dB"
-        lr = soup.find_all(string=title)
-        updown = lr[0].parent.parent.find_all(string=re.compile(unit))
-        for dirn, triple in zip(("up", "down"), updown):
-            # [:3] to get rid of N/A from the strange "2.8, 12.8, 18.9,N/A,N/A dB 7.8, 16.7, 24.3 dB"
-            vals = (v.strip() for v in triple.replace(unit, '').split(',')[:3])
-            for n, t in enumerate(vals, 1):
-                r['%s_attenuation%d' % (dirn, n)] = float(t)
-
-    def fetch_uptime():
-        """ Returns uptime in seconds """
-        uptime = fetch_string('DSL Uptime')
-        mat = re.match(r'(?:(\d+)days)? *(?:(\d+)hours)? *(?:(\d+)min)? *(?:(\d+)sec)?', uptime)
-        d,h,m,s = (int(x) for x in mat.groups(0))
-        return int(datetime.timedelta(days=d, hours=h, minutes=m, seconds=s).total_seconds())
-
     res['datetime'] = datetime.datetime.now()
-    res['up_rate'], res['down_rate'] = fetch_pair("Line Rate", 'Mbps')
-    res['up_maxrate'], res['down_maxrate'] = fetch_pair("Maximum Line rate", 'Mbps')
-    res['up_power'], res['down_power'] = fetch_pair("Output Power", 'dBm')
-    res['up_noisemargin'], res['down_noisemargin'] = fetch_pair("Noise Margin", 'dB')
-    res['up_transferred'], res['down_transferred'] = fetch_pair("Data Transferred", "MBytes")
-    fetch_line_attenuation(res)
-    res['dsl_uptime'] = fetch_uptime()
-    res['dsl_mode'] = fetch_string('DSL Mode')
-    res['dsl_type'] = fetch_string('DSL Type')
-    res['dsl_status'] = fetch_string('DSL Status')
+    res['up_rate'], res['down_rate'] = fetch_pair(soup, "Line Rate", 'Mbps')
+    res['up_maxrate'], res['down_maxrate'] = fetch_pair(soup, "Maximum Line rate", 'Mbps')
+    res['up_power'], res['down_power'] = fetch_pair(soup, "Output Power", 'dBm')
+    res['up_noisemargin'], res['down_noisemargin'] = fetch_pair(soup, "Noise Margin", 'dB')
+    res['up_transferred'], res['down_transferred'] = fetch_pair(soup, "Data Transferred", "MBytes")
+    fetch_line_attenuation(soup, res)
+    res['dsl_uptime'] = fetch_uptime(soup ,'DSL Uptime')
+    res['dsl_mode'] = fetch_string(soup, 'DSL Mode')
+    res['dsl_type'] = fetch_string(soup, 'DSL Type')
+    res['dsl_status'] = fetch_string(soup, 'DSL Status')
 
     # integer kbps are easier to work with in scripts
     for n in 'down_rate', 'up_rate', 'down_maxrate', 'up_maxrate':
         res[n] = int(res[n] * 1000)
 
     return res
+
+def parse_gateway(res, html):
+    """ Parses the contents of http://10.1.1.1/modals/gateway-modal.lp """
+    soup = BeautifulSoup(html, 'html.parser')
+    names = [
+        'Product Vendor',
+        'Product Name',
+        'Software Version',
+        'Firmware Version',
+        'Hardware Version',
+        'Serial Number',
+        'MAC Address',
+    ]
+    for n in names:
+        res[n.lower().replace(' ', '_')] = fetch_string(soup, n)
+
+    res['uptime'] = fetch_uptime(soup, 'Uptime')
+
 
 def print_plain(stats):
     print('\n'.join('%s %s' % (str(k), str(v)) for k, v in stats.items()))
@@ -199,15 +222,26 @@ def print_csv(stats):
 def print_csv_headers(stats):
     csv.writer(sys.stdout).writerow(stats.keys())
 
-def fetch_and_output(config, from_file = None, json = False, csv = False, csv_headers = False):
-    if from_file:
-        from_file.seek(0)
-        stats_page = from_file.read()
-    else:
+def fetch_and_output(config, from_broadband = None, from_gateway = None, json = False, csv = False, csv_headers = False):
+    stats_page = None
+    gateway_page = None
+
+    if from_broadband:
+        stats_page = from_broadband.read()
+    if from_gateway:
+        gateway_page = from_gateway.read()
+
+    if not from_gateway and not from_broadband:
         f = Fetcher(config)
-        stats_page = f.fetch()
+        stats_page, gateway_page = f.get()
         D(stats_page)
-    stats = parse(stats_page)
+
+    stats = OrderedDict()
+    if stats_page:
+        parse_broadband(stats, stats_page)
+    if gateway_page:
+        parse_gateway(stats, gateway_page)
+
     if json:
         print_json(stats)
     elif csv:
@@ -230,7 +264,8 @@ Configure your details in tgiistat.toml\n
     parser.add_argument('--csv-headers', action="store_true", help="CSV-style headers")
     parser.add_argument('--poll', '-p', type=int, default=0, help='interval (in seconds) between polls')
     # --parse is useful for debugging parse() from a saved broadband-bridge-modal.lp html file
-    parser.add_argument('--parse', type=argparse.FileType('r'), help="Parse html from a file", metavar='saved.html')
+    parser.add_argument('--parse', type=argparse.FileType('r'), help="Parse html from a file", metavar='broadband-bridge-modal.lp')
+    parser.add_argument('--gwparse', type=argparse.FileType('r'), help="Parse gateway html from a file", metavar='gateway-modal.lp')
 
     args = parser.parse_args()
 
@@ -243,14 +278,14 @@ Configure your details in tgiistat.toml\n
         csv_headers = args.csv_headers
         while True:
             try:
-                fetch_and_output(config, args.parse, args.json, args.csv, csv_headers)
+                fetch_and_output(config, args.parse, args.gwparse, args.json, args.csv, csv_headers)
                 sys.stdout.flush()
                 csv_headers = False # first time only
             except Exception as e:
                 E(e)
             time.sleep(args.poll)
     else:
-        fetch_and_output(config, args.parse, args.json, args.csv, args.csv_headers)
+        fetch_and_output(config, args.parse, args.gwparse, args.json, args.csv, args.csv_headers)
 
 
 if __name__ == '__main__':
