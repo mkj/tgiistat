@@ -227,8 +227,10 @@ def fetch_and_output(config, from_broadband = None, from_gateway = None, json = 
     gateway_page = None
 
     if from_broadband:
+        from_broadband.seek(0)
         stats_page = from_broadband.read()
     if from_gateway:
+        from_gateway.seek(0)
         gateway_page = from_gateway.read()
 
     if not from_gateway and not from_broadband:
