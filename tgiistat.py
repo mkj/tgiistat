@@ -211,6 +211,31 @@ def parse_gateway(res, html):
 
     res['uptime'] = fetch_uptime(soup, 'Uptime')
 
+def fix_wrap(stats, config):
+    # (when polling) handle up/down transferred wrap around
+    if 'last_uptime' not in config or stats['uptime'] < config['last_uptime']:
+        # reboot or first time
+        config.update({
+            'last_up_transferred': 0,
+            'last_down_transferred': 0,
+            'up_wraps': 0,
+            'down_wraps': 0,
+            'last_uptime': 0
+        })
+    else:
+        if stats['up_transferred'] < config['last_up_transferred']:
+            config['up_wraps'] += 1
+        if stats['down_transferred'] < config['last_down_transferred']:
+            config['down_wraps'] += 1
+    # save last values
+    config.update({
+        'last_up_transferred': stats['up_transferred'],
+        'last_down_transferred': stats['down_transferred'],
+        'last_uptime': stats['uptime']
+    });
+    # update tally to include wraps
+    stats['up_transferred'] += 4096 * config['up_wraps']
+    stats['down_transferred'] += 4096 * config['down_wraps']
 
 def print_plain(stats):
     print('\n'.join('%s %s' % (str(k), str(v)) for k, v in stats.items()))
@@ -245,6 +270,8 @@ def fetch_and_output(config, from_broadband = None, from_gateway = None, json = 
         parse_broadband(stats, stats_page)
     if gateway_page:
         parse_gateway(stats, gateway_page)
+
+    fix_wrap(stats, config)
 
     if json:
         print_json(stats)
