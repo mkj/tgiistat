@@ -40,6 +40,8 @@ def setup_logging(debug = False):
     #logging.getLogger("asyncio").setLevel(logging.DEBUG)
 
 class Fetcher(object):
+    REQUEST_TIMEOUT = 30
+
     def __init__(self, config):
         self.config = config
         self.top_url = 'http://%s' % self.config['address']
@@ -53,7 +55,7 @@ class Fetcher(object):
 
         ### Fetch CSRF
         csrf_url = '%s/login.lp?action=getcsrf' % self.top_url
-        csrf = session.get(csrf_url).text
+        csrf = session.get(csrf_url, timeout = self.REQUEST_TIMEOUT).text
         if len(csrf) != 64:
             D("csrf %s", csrf)
             raise Exception("Bad csrf response")
@@ -81,7 +83,7 @@ class Fetcher(object):
             'CSRFtoken': csrf
         }
         ### Send the first SRP request
-        auth1 = session.post(auth_url, data=req_data)
+        auth1 = session.post(auth_url, data=req_data, timeout = self.REQUEST_TIMEOUT)
         if auth1.status_code != 200:
             D(auth1.text)
             raise Exception("Error authenticating %d" % auth1.status_code)
@@ -100,7 +102,7 @@ class Fetcher(object):
             'CSRFtoken': csrf
         }
         ### Send our reponse to the SRP challenge
-        auth2 = session.post(auth_url, data=req_data)
+        auth2 = session.post(auth_url, data=req_data, timeout = self.REQUEST_TIMEOUT)
 
         if auth2.status_code != 200:
             D(auth2.text)
@@ -118,10 +120,10 @@ class Fetcher(object):
             self.session = self.connect()
 
         modem_url = '%s/modals/broadband-bridge-modal.lp' % self.top_url
-        r = self.session.get(modem_url)
+        r = self.session.get(modem_url, timeout = self.REQUEST_TIMEOUT)
 
         gateway_url = '%s/modals/gateway-modal.lp' % self.top_url
-        g = self.session.get(gateway_url)
+        g = self.session.get(gateway_url, timeout = self.REQUEST_TIMEOUT)
 
         return r.text, g.text
 
