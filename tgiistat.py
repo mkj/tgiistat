@@ -176,7 +176,7 @@ def parse_broadband(res, html):
     """
     soup = BeautifulSoup(html, 'html.parser')
 
-    res['datetime'] = datetime.datetime.now()
+    res['datetime'] = str(datetime.datetime.now())
     res['up_rate'], res['down_rate'] = fetch_pair(soup, "Line Rate", 'Mbps')
     res['up_maxrate'], res['down_maxrate'] = fetch_pair(soup, "Maximum Line rate", 'Mbps')
     res['up_power'], res['down_power'] = fetch_pair(soup, "Output Power", 'dBm')
