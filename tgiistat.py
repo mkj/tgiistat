@@ -131,6 +131,9 @@ class Fetcher(object):
 
 def fetch_string(soup, title):
     lr = soup.find_all(string=title)
+    if not lr:
+        W("Failed to fetch %s" % title)
+        return ""
     D(title)
     D(lr[0].parent.parent)
     return lr[0].parent.parent.find_next('span').text
@@ -138,6 +141,10 @@ def fetch_string(soup, title):
 def fetch_pair(soup, title, unit):
     # Find the label
     lr = soup.find_all(string=title)
+    if not lr:
+        # failed. Perhaps the modem is unsynced
+        W("Failed to fetch pair %s" % title)
+        return 0.0,0.0
     # Traverse up to the parent div that also includes the values.
     # Search that div for text with the units (Mbps, dB etc)
     updown = lr[0].parent.parent.find_all(string=re.compile(unit))
@@ -153,6 +160,9 @@ def fetch_line_attenuation(soup, r):
     title = "Line Attenuation"
     unit = "dB"
     lr = soup.find_all(string=title)
+    if not lr:
+        W("Failed to fetch attenuation")
+        return
     updown = lr[0].parent.parent.find_all(string=re.compile(unit))
     for dirn, triple in zip(("up", "down"), updown):
         # [:3] to get rid of N/A from the strange "2.8, 12.8, 18.9,N/A,N/A dB 7.8, 16.7, 24.3 dB"
